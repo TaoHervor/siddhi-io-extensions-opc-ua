@@ -99,7 +99,6 @@ public class OpcReadThread implements Runnable {
             try {
                 session = client.createSessionChannel(endpoint);
                 session.activate();
-                System.out.println(Thread.currentThread().getName() + ": Opened session to OPC Server.");
                 // Read current time
                 NodeId nodeId = Identifiers.Server_ServerStatus_CurrentTime;
                 ReadResponse readResponse = session.Read(

@@ -98,11 +98,17 @@ public class OpcSource extends Source<OpcSource.OpcSourceState>{
     public static final  String OPC_APP_NAME="opc.app.name";
     public static final String SERVER_CERT_PATH="server.cert.path";
     public static final String SERVER_PRIV_PATH="server.priv.path";
+    public static final String CLIENT_TIMEOUT="client.timeout";
+    public static final String MAX_MESSAGE_LENGTH="max.message.length";
+    public static final String PROTOCOL_TYPE="max.message.length";
     private static final Logger LOG = Logger.getLogger(OpcSource.class);
     private String opcServerUrl;
     private String opcAppName;
     private String certPath;
     private String privPath;
+    private int clientTimeout;
+    private int maxMessageLength;
+    private String protocolType;
     private SiddhiAppContext siddhiAppContext;
     private OpcSourceState opcSourceState;
     private SourceEventListener sourceEventListener;
