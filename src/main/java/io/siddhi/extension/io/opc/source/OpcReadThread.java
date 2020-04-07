@@ -124,7 +124,7 @@ public class OpcReadThread implements Runnable {
                 monitoredItem.put("Value", value);
                 // publish JSON string
                 String msgStr = monitoredItem.toString();
-                Object[] event= new Object[]{msgStr};
+                Object[] event= new Object[]{msgStr,"11111111111"};
                 String[] transportSyncPropertiesArr = new String[]{msgStr};
                 sourceEventListener.onEvent(event,transportSyncPropertiesArr);
             } catch (ServiceResultException e) {
