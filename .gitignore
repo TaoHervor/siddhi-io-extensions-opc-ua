@@ -1,4 +1,4 @@
-./target/*
-./.idea/*
-./*.pem
-./*.der
+target/*
+.idea/*
+*.pem
+*.der
