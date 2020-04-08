@@ -2857,7 +2857,7 @@ class NanoServer {
         // //////////// SERVER //////////////
         // Create UA Server Application
         // Create UA Service Server
-        String applicationName = "NanoServer";
+        String applicationName = "test";
         Application myServerApplication = new Application();
         Locale myLocale = new Locale("en");
         LocalizedText myApplicationDescription = new LocalizedText(applicationName, myLocale);

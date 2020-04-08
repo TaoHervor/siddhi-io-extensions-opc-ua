@@ -5,6 +5,7 @@ import io.siddhi.core.event.stream.StreamEvent;
 import io.siddhi.core.event.stream.StreamEventFactory;
 import io.siddhi.core.event.stream.converter.StreamEventConverter;
 import io.siddhi.core.stream.input.source.SourceEventListener;
+import io.siddhi.extension.io.opc.utils.OpcConfig;
 import net.minidev.json.JSONObject;
 import org.apache.log4j.Logger;
 import org.opcfoundation.ua.application.Client;
@@ -12,6 +13,7 @@ import org.opcfoundation.ua.application.SessionChannel;
 import org.opcfoundation.ua.builtintypes.NodeId;
 import org.opcfoundation.ua.common.ServiceResultException;
 import org.opcfoundation.ua.core.*;
+import org.opcfoundation.ua.transport.ServiceChannel;
 import sun.awt.datatransfer.DataTransferer;
 
 import java.rmi.activation.ActivationInstantiator;
@@ -41,11 +43,13 @@ public class OpcReadThread implements Runnable {
     private Condition condition;
     private  EndpointDescription  endpoint;
     private SessionChannel session;
+    private OpcConfig opcConfig;
 
-    OpcReadThread(SourceEventListener sourceEventListener,Client client,EndpointDescription endpoint) throws ServiceResultException {
+    OpcReadThread(SourceEventListener sourceEventListener,Client client,OpcConfig opcConfig,EndpointDescription endpoint) throws ServiceResultException {
         this.sourceEventListener=sourceEventListener;
         this.endpoint=endpoint;
         this.client=client;
+        this.opcConfig=opcConfig;
     }
 
     void pause() {
@@ -97,8 +101,21 @@ public class OpcReadThread implements Runnable {
                 }
             }
             try {
-                session = client.createSessionChannel(endpoint);
-                session.activate();
+                Integer authentication=opcConfig.getAuthentication();
+                String messageSecurityMode=opcConfig.getMessageSecurityMode();
+                if (messageSecurityMode !=null && !messageSecurityMode.equals(MessageSecurityMode.None)) {
+                    session = client.createSessionChannel(endpoint);
+                } else {
+                    session = client.createSessionChannel(opcConfig.getOpcServerUrl());
+                }
+
+                switch (authentication) {
+                    case 1:
+                        session.activate(opcConfig.getUserName(),opcConfig.getPassWord());
+                        break;
+                    default:
+                        session.activate();
+                }
                 // Read current time
                 NodeId nodeId = Identifiers.Server_ServerStatus_CurrentTime;
                 ReadResponse readResponse = session.Read(

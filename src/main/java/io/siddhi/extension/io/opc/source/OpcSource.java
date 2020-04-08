@@ -15,9 +15,13 @@ import io.siddhi.core.util.config.ConfigReader;
 import io.siddhi.core.util.snapshot.state.State;
 import io.siddhi.core.util.snapshot.state.StateFactory;
 import io.siddhi.core.util.transport.OptionHolder;
+import io.siddhi.extension.io.opc.utils.OpcConfig;
 import io.siddhi.query.api.exception.SiddhiAppValidationException;
 import org.apache.log4j.Logger;
+import org.opcfoundation.ua.builtintypes.UnsignedShort;
 import org.opcfoundation.ua.common.ServiceResultException;
+import org.opcfoundation.ua.core.MessageSecurityMode;
+import org.opcfoundation.ua.transport.security.SecurityPolicy;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -71,7 +75,40 @@ import java.util.concurrent.ExecutorService;
                         description = "sss",
                         type = {DataType.OBJECT},
                         optional = true,
-                        defaultValue = "null")
+                        defaultValue = "null"),
+                @Parameter(name="client.timeout",
+                        description = "sds",
+                        type={DataType.STRING},
+                        optional = true,
+                        defaultValue = "120000"),
+                @Parameter(name="max.message.length",
+                        description = "ds",
+                        type={DataType.STRING},
+                        optional = true,
+                        defaultValue = "4194240"),
+                @Parameter(name="message.security.mode",
+                        description = "ds",
+                        type = {DataType.STRING},
+                        optional = true,
+                        defaultValue = "MessageSecurityMode.None"),
+                @Parameter(name="authentication.mode",
+                        description = "ds",
+                        type = {DataType.STRING},
+                        optional = true,
+                        defaultValue = "0"),
+                @Parameter(name="security.policy",
+                        description = "ds",
+                        type={DataType.STRING},
+                        optional = true,
+                        defaultValue ="SecurityPolicy.NONE"),
+                @Parameter(name="user.name",
+                        description = "ds",
+                        type = {DataType.STRING},
+                        defaultValue = "0"),
+                @Parameter(name="user.password",
+                        description = "ds",
+                        type={DataType.STRING},
+                        defaultValue ="SecurityPolicy.NONE")
         },
         examples = {
                 @Example(
@@ -100,33 +137,67 @@ public class OpcSource extends Source<OpcSource.OpcSourceState>{
     public static final String SERVER_PRIV_PATH="server.priv.path";
     public static final String CLIENT_TIMEOUT="client.timeout";
     public static final String MAX_MESSAGE_LENGTH="max.message.length";
-    public static final String PROTOCOL_TYPE="max.message.length";
+    public static final String MESSAGE_SECURITY_MODE="message.security.mode";
+    public static final String SECURITY_POLICY="security.policy";
+    public static final String USER_NAME="user.name";
+    public static final String USER_PASSWORD="user.password";
+    public static final String AUTHENTICATION_MODE="authentication.mode";
     private static final Logger LOG = Logger.getLogger(OpcSource.class);
+
     private String opcServerUrl;
     private String opcAppName;
     private String certPath;
     private String privPath;
-    private int clientTimeout;
-    private int maxMessageLength;
-    private String protocolType;
+    private String clientTimeout;
+    private String maxMessageLength;
+    private String messageSecurityMode;
+    private String userName;
+    private String password;
+    private String authenticationMode;
     private SiddhiAppContext siddhiAppContext;
     private OpcSourceState opcSourceState;
     private SourceEventListener sourceEventListener;
     private OptionHolder optionHolder;
     private OpcClientGroup opcClientGroup;
+    private OpcConfig opcConfig;
+    private String securityPolicy;
 
     protected ServiceDeploymentInfo exposeServiceDeploymentInfo() {
         return null;
     }
 
     public StateFactory<OpcSourceState> init(SourceEventListener sourceEventListener, OptionHolder optionHolder, String[] requestedTransportPropertyNames, ConfigReader configReader, SiddhiAppContext siddhiAppContext) {
+
         this.siddhiAppContext = siddhiAppContext;
         this.optionHolder = optionHolder;
         this.sourceEventListener = sourceEventListener;
+        this.opcConfig=new OpcConfig();
+
         opcServerUrl = optionHolder.validateAndGetStaticValue(OPC_SERVER_URL);
         opcAppName = optionHolder.validateAndGetStaticValue(OPC_APP_NAME);
         certPath = optionHolder.validateAndGetStaticValue(SERVER_CERT_PATH);
         privPath = optionHolder.validateAndGetStaticValue(SERVER_PRIV_PATH);
+        clientTimeout=optionHolder.validateAndGetStaticValue(CLIENT_TIMEOUT);
+        maxMessageLength=optionHolder.validateAndGetStaticValue(MAX_MESSAGE_LENGTH);
+        messageSecurityMode=optionHolder.validateAndGetStaticValue(MESSAGE_SECURITY_MODE);
+        userName=optionHolder.validateAndGetStaticValue(USER_NAME);
+        password=optionHolder.validateAndGetStaticValue(USER_PASSWORD);
+        authenticationMode=optionHolder.validateAndGetStaticValue(AUTHENTICATION_MODE);
+        securityPolicy=optionHolder.validateAndGetStaticValue(SECURITY_POLICY);
+
+
+        opcConfig.setAuthentication(Integer.parseInt(authenticationMode));
+        opcConfig.setCertPath(certPath);
+        opcConfig.setMaxMessageLength(maxMessageLength);
+        opcConfig.setClientTimeout(clientTimeout);
+        opcConfig.setOpcAppName(opcAppName);
+        opcConfig.setOpcAppName(privPath);
+        opcConfig.setPassWord(password);
+        opcConfig.setUserName(userName);
+        opcConfig.setOpcServerUrl(opcServerUrl);
+        opcConfig.setMessageSecurityMode(messageSecurityMode);
+        opcConfig.setSecurityPolicy(securityPolicy);
+
         return() -> new OpcSourceState();
     }
 
@@ -137,17 +208,19 @@ public class OpcSource extends Source<OpcSource.OpcSourceState>{
     public void connect(ConnectionCallback connectionCallback, OpcSourceState state) {
         ExecutorService executorService = siddhiAppContext.getExecutorService();
         try {
-            opcClientGroup = new OpcClientGroup(opcAppName,certPath,privPath,executorService,sourceEventListener,opcServerUrl);
+
+            opcClientGroup = new OpcClientGroup(opcConfig,
+                    executorService,sourceEventListener);
         } catch (ServiceResultException | IOException | CertificateException | NoSuchAlgorithmException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException | BadPaddingException | InvalidParameterSpecException | InvalidKeySpecException | IllegalBlockSizeException e) {
             e.printStackTrace();
         }
         this.opcSourceState = state;
-        if (!opcSourceState.isRestored) {
+        /*if (!opcSourceState.isRestored) {
             opcClientGroup.setOpcSourceState(opcSourceState);
             opcClientGroup.restoreState();
         } else {
             opcClientGroup.setOpcSourceState(opcSourceState);
-        }
+        }*/
         opcClientGroup.run();
     }
 
