@@ -185,13 +185,12 @@ public class OpcSource extends Source<OpcSource.OpcSourceState>{
         authenticationMode=optionHolder.validateAndGetStaticValue(AUTHENTICATION_MODE);
         securityPolicy=optionHolder.validateAndGetStaticValue(SECURITY_POLICY);
 
-
         opcConfig.setAuthentication(Integer.parseInt(authenticationMode));
         opcConfig.setCertPath(certPath);
         opcConfig.setMaxMessageLength(maxMessageLength);
         opcConfig.setClientTimeout(clientTimeout);
         opcConfig.setOpcAppName(opcAppName);
-        opcConfig.setOpcAppName(privPath);
+        opcConfig.setPrivPath(privPath);
         opcConfig.setPassWord(password);
         opcConfig.setUserName(userName);
         opcConfig.setOpcServerUrl(opcServerUrl);

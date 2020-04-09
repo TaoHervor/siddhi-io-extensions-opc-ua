@@ -25,15 +25,15 @@ public class TestCase {
         SiddhiManager siddhiManager = new SiddhiManager();
 
         SiddhiAppRuntime siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(
-                "define stream outputStream (symbol string,aa string); " +
+                "define stream outputStream (Id string,Uri string,SourceTimestamp string,ServerTimestamp string,Value string); " +
                         ""+
                         "@info(name='query1') " +
                         "@source(type='opc-ua', opc.server.url='opc.tcp://127.0.0.1:8666', opc.app.name='test', "
                         + "server.cert.path='', server.priv.path='', client.timeout='60000',max.message.length='41200',"
-                        + "message.security.mode='MessageSecurityMode.None',authentication.mode='2',security.policy='SecurityPolicy.NONE',"
-                        + "user.name='123',user.password='123')" +
-                        "Define stream inputStream (symbol string,aa string);" +
-                        "from inputStream select symbol,aa insert into outputStream;");
+                        + "message.security.mode='None',authentication.mode='2',security.policy='BASIC256',"
+                        + "user.name='user1',user.password='p4ssword')" +
+                        "Define stream inputStream (Id string,Uri string,SourceTimestamp string,ServerTimestamp string,Value string);" +
+                        "from inputStream select Id,Uri,SourceTimestamp,ServerTimestamp,Value insert into outputStream;");
 
 
         siddhiAppRuntime.addCallback("outputStream", new StreamCallback() {

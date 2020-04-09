@@ -2,21 +2,18 @@ package io.siddhi.extension.io.opc.source;
 
 import io.siddhi.core.stream.input.source.SourceEventListener;
 import io.siddhi.extension.io.opc.utils.OpcConfig;
-import net.minidev.json.JSONObject;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.log4j.Logger;
 import org.opcfoundation.ua.application.Application;
 import org.opcfoundation.ua.application.Client;
-import org.opcfoundation.ua.application.SessionChannel;
-import org.opcfoundation.ua.builtintypes.NodeId;
 import org.opcfoundation.ua.builtintypes.UnsignedShort;
 import org.opcfoundation.ua.common.ServiceResultException;
-import org.opcfoundation.ua.core.*;
-import org.opcfoundation.ua.transport.ChannelService;
-import org.opcfoundation.ua.transport.SecureChannel;
-import org.opcfoundation.ua.transport.UriUtil;
-import org.opcfoundation.ua.transport.security.*;
-import org.opcfoundation.ua.utils.EndpointUtil;
+import org.opcfoundation.ua.core.EndpointDescription;
+import org.opcfoundation.ua.core.MessageSecurityMode;
+import org.opcfoundation.ua.transport.security.CertificateValidator;
+import org.opcfoundation.ua.transport.security.HttpsSecurityPolicy;
+import org.opcfoundation.ua.transport.security.KeyPair;
+import org.opcfoundation.ua.transport.security.SecurityPolicy;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -65,24 +62,24 @@ public class OpcClientGroup {
             BadPaddingException, InvalidParameterSpecException, InvalidKeySpecException,
             IllegalBlockSizeException {
 
-        this.executorService=executorService;
+        this.executorService = executorService;
         KeyPair clientApplicationInstanceCertificate = null;
         EndpointDescription[] endpoints = null;
 
-        String certPath=opcConfig.getCertPath();
-        String privPath=opcConfig.getPrivPath();
-        String opcAppName=opcConfig.getOpcAppName();
-        String clientTimeout=opcConfig.getClientTimeout();
-        String maxMessageLength=opcConfig.getMaxMessageLength();
-        String opcServerUrl=opcConfig.getOpcServerUrl();
-        String messageSecurityMode=opcConfig.getMessageSecurityMode();
-        String securityPolicy=opcConfig.getSecurityPolicy();
+        String certPath = opcConfig.getCertPath();
+        String privPath = opcConfig.getPrivPath();
+        String opcAppName = opcConfig.getOpcAppName();
+        String clientTimeout = opcConfig.getClientTimeout();
+        String maxMessageLength = opcConfig.getMaxMessageLength();
+        String opcServerUrl = opcConfig.getOpcServerUrl();
+        MessageSecurityMode messageSecurityMode = opcConfig.getMessageSecurityMode();
+        SecurityPolicy securityPolicy = opcConfig.getSecurityPolicy();
 
-        if (messageSecurityMode !=null && !messageSecurityMode.equals(MessageSecurityMode.None)) {
+        if (messageSecurityMode != null && !messageSecurityMode.equals(MessageSecurityMode.None)) {
             //Certificate
             if (!certPath.isEmpty() && !privPath.isEmpty()) {
-                clientApplicationInstanceCertificate = getOPCCertByFile(certPath,privPath);
-            } else if (!opcAppName.isEmpty()){
+                clientApplicationInstanceCertificate = getOPCCertByFile(certPath, privPath);
+            } else if (!opcAppName.isEmpty()) {
                 clientApplicationInstanceCertificate = getOPCCertByAppName(opcAppName);
             } else {
                 LOG.info("required opcAppName or certFile");
@@ -91,42 +88,41 @@ public class OpcClientGroup {
             this.client = Client.createClientApplication(clientApplicationInstanceCertificate);
 
             //Configure Client
-            if (clientTimeout.isEmpty()){
+            if (clientTimeout.isEmpty()) {
                 client.setTimeout(120000);
-            }else {
+            } else {
                 client.setTimeout(Integer.parseInt(clientTimeout));
             }
             if (maxMessageLength.isEmpty()) {
-                client.setMaxMessageSize(UnsignedShort.MAX_VALUE.intValue()*64);
-            }else {
+                client.setMaxMessageSize(UnsignedShort.MAX_VALUE.intValue() * 64);
+            } else {
                 client.setMaxMessageSize(Integer.parseInt(maxMessageLength));
             }
-
             if (opcServerUrl.startsWith("opc.tcp")) {
-                endpoints=client.discoverEndpoints(opcServerUrl);
-                endpoints = selectByProtocol(endpoints, "opc.tcp");
-               // endpoints=selectByMessageSecurityMode(endpoints,messageSecurityMode);
-                if (securityPolicy !=null ) {
-                 //   endpoints=selectBySecurityPolicy(endpoints,securityPolicy);
-                }
-                endpoints=sortBySecurityLevel(endpoints);
-
-            } else if (opcServerUrl.startsWith("opc.https")) {
-                KeyPair httpsCertificate = getHttpsCert(opcAppName);
-                client.getApplication().getHttpsSettings().setKeyPair(httpsCertificate);
-                client.getApplication().getHttpsSettings().setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
-                client.getApplication().getHttpsSettings().setHttpsSecurityPolicies(HttpsSecurityPolicy.ALL_104);
-                client.getApplication().getHttpsSettings().setCertificateValidator(CertificateValidator.ALLOW_ALL);
                 endpoints = client.discoverEndpoints(opcServerUrl);
-                endpoints = selectByProtocol(endpoints, "opc.https");
+                endpoints = selectByProtocol(endpoints, "opc.tcp");
+                endpoints = selectByMessageSecurityMode(endpoints, messageSecurityMode);
+            if (securityPolicy != null) {
+                endpoints = selectBySecurityPolicy(endpoints, securityPolicy);
             }
-        } else {
-            Application clientApplication = new Application();
-            this.client = new Client(clientApplication);
+            endpoints = sortBySecurityLevel(endpoints);
+         } else if (opcServerUrl.startsWith("opc.https")) {
+           /* KeyPair httpsCertificate = getHttpsCert(opcAppName);
+            client.getApplication().getHttpsSettings().setKeyPair(httpsCertificate);
+            client.getApplication().getHttpsSettings().setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+            client.getApplication().getHttpsSettings().setHttpsSecurityPolicies(HttpsSecurityPolicy.ALL_104);
+            client.getApplication().getHttpsSettings().setCertificateValidator(CertificateValidator.ALLOW_ALL);
+            endpoints = client.discoverEndpoints(opcServerUrl);
+            endpoints = selectByProtocol(endpoints, "opc.https");*/
+            }
         }
-
-
-
+        else {
+            Application clientApplication = new Application();
+            client = new Client(clientApplication);
+            endpoints = client.discoverEndpoints(opcServerUrl);
+            endpoints = selectByProtocol(endpoints, "opc.tcp");
+            endpoints = selectByMessageSecurityMode(endpoints, messageSecurityMode);
+        }
         if (endpoints.length == 0) {
             throw new IllegalArgumentException("No suitable endpoint found from " + opcServerUrl);
         } else {

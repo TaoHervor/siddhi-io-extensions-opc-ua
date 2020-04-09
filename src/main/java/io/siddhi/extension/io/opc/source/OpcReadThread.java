@@ -102,13 +102,7 @@ public class OpcReadThread implements Runnable {
             }
             try {
                 Integer authentication=opcConfig.getAuthentication();
-                String messageSecurityMode=opcConfig.getMessageSecurityMode();
-                if (messageSecurityMode !=null && !messageSecurityMode.equals(MessageSecurityMode.None)) {
-                    session = client.createSessionChannel(endpoint);
-                } else {
-                    session = client.createSessionChannel(opcConfig.getOpcServerUrl());
-                }
-
+                session = client.createSessionChannel(endpoint);
                 switch (authentication) {
                     case 1:
                         session.activate(opcConfig.getUserName(),opcConfig.getPassWord());
@@ -125,7 +119,7 @@ public class OpcReadThread implements Runnable {
                         new ReadValueId(nodeId, Attributes.Value, null, null)
                 );
                 // convert node to JSON
-                JSONObject obj = new JSONObject();
+             /*   JSONObject obj = new JSONObject();
                 obj.put("Id", nodeId.toString());
                 obj.put("Uri", endpoint.getServer().getApplicationUri());
 
@@ -139,18 +133,24 @@ public class OpcReadThread implements Runnable {
                 monitoredItem.put("ClientHandle", 2);
                 monitoredItem.put("Value", value);
                 // publish JSON string
-                String msgStr = monitoredItem.toString();
-                Object[] event= new Object[]{msgStr,"11111111111"};
-                String[] transportSyncPropertiesArr = new String[]{msgStr};
+                String msgStr = monitoredItem.toString();*/
+                System.out.println(readResponse.getResults()[0]);
+                Object[] event= new Object[]{nodeId.toString(),endpoint.getServer().getApplicationUri(),
+                        readResponse.getResults()[0].getSourceTimestamp().toString(),
+                        readResponse.getResults()[0].getServerTimestamp().toString(),
+                        readResponse.getResults()[0].getValue().toString()
+                };
+                String[] transportSyncPropertiesArr = new String[]{};
                 sourceEventListener.onEvent(event,transportSyncPropertiesArr);
             } catch (ServiceResultException e) {
+                session.closeAsync();
                 e.printStackTrace();
             }
             try {
                 Thread.sleep(3000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
-            }
+        }
         }
     }
 

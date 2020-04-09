@@ -1,7 +1,11 @@
 package io.siddhi.extension.io.opc.utils;
 
+import io.siddhi.extension.io.opc.source.OpcReadThread;
+import org.apache.log4j.Logger;
 import org.opcfoundation.ua.core.MessageSecurityMode;
 import org.opcfoundation.ua.transport.security.SecurityPolicy;
+
+import static org.opcfoundation.ua.utils.EndpointUtil.selectByMessageSecurityMode;
 
 /**
  * @author Hervor
@@ -15,16 +19,17 @@ public class OpcConfig {
     public OpcConfig() {
     }
 
+    private static final org.apache.log4j.Logger LOG = Logger.getLogger(OpcConfig.class);
   private String opcAppName;
   private String certPath;
   private String privPath;
   private String clientTimeout;
   private String maxMessageLength;
   //None; Sign; SignAndEncrypt;
-  private String messageSecurityMode;
+  private MessageSecurityMode messageSecurityMode;
   private String opcServerUrl;
-   //Basic128Rsa15;Basic256;Basic256Sha256
-  private String securityPolicy;
+  //BASIC128RSA15;BASIC256;BASIC256SHA256;AES128_SHA256_RSAOAEP;AES256_SHA256_RSAPSS;NONE
+  private SecurityPolicy securityPolicy;
   private String userName;
   private String passWord;
 
@@ -37,7 +42,7 @@ public class OpcConfig {
     }
 
     //0:匿名;1:验证用户名、密码,2:certificate,3:IssuedToken
-  private Integer authentication;
+    private Integer authentication;
 
     public String getOpcAppName() {
         return opcAppName;
@@ -79,12 +84,25 @@ public class OpcConfig {
         this.maxMessageLength = maxMessageLength;
     }
 
-    public String getMessageSecurityMode() {
+    public MessageSecurityMode getMessageSecurityMode() {
         return messageSecurityMode;
     }
 
     public void setMessageSecurityMode(String messageSecurityMode) {
-        this.messageSecurityMode = messageSecurityMode;
+        //None; Sign; SignAndEncrypt;
+        switch (messageSecurityMode) {
+            case "Sign":
+                this.messageSecurityMode=MessageSecurityMode.Sign;
+                break;
+            case "SignAndEncrypt":
+                this.messageSecurityMode=MessageSecurityMode.SignAndEncrypt;
+                break;
+            case "None":
+                this.messageSecurityMode=MessageSecurityMode.None;
+                break;
+            default:
+               LOG.info("not support MessageSecurityMode "+messageSecurityMode);
+        }
     }
 
     public String getOpcServerUrl() {
@@ -95,12 +113,33 @@ public class OpcConfig {
         this.opcServerUrl = opcServerUrl;
     }
 
-    public String getSecurityPolicy() {
+    public SecurityPolicy getSecurityPolicy() {
         return securityPolicy;
     }
 
     public void setSecurityPolicy(String securityPolicy) {
-        this.securityPolicy = securityPolicy;
+        switch (securityPolicy) {
+            case "BASIC128RSA15":
+                this.securityPolicy=SecurityPolicy.BASIC128RSA15;
+                break;
+            case "BASIC256":
+                this.securityPolicy=SecurityPolicy.BASIC256;
+                break;
+            case "BASIC256SHA256":
+                this.securityPolicy=SecurityPolicy.BASIC256SHA256;
+                break;
+            case "AES128_SHA256_RSAOAEP":
+                this.securityPolicy=SecurityPolicy.AES128_SHA256_RSAOAEP;
+                break;
+            case "AES256_SHA256_RSAPSS":
+                this.securityPolicy=SecurityPolicy.AES256_SHA256_RSAPSS;
+                break;
+            case  "NONE":
+                this.securityPolicy=SecurityPolicy.NONE;
+                break;
+            default:
+                LOG.info("not support Security "+securityPolicy);
+        }
     }
 
     public String getUserName() {
