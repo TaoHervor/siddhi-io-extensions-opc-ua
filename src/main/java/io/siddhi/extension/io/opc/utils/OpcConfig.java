@@ -1,11 +1,10 @@
 package io.siddhi.extension.io.opc.utils;
 
-import io.siddhi.extension.io.opc.source.OpcReadThread;
 import org.apache.log4j.Logger;
+import org.opcfoundation.ua.builtintypes.NodeId;
+import org.opcfoundation.ua.core.IdType;
 import org.opcfoundation.ua.core.MessageSecurityMode;
 import org.opcfoundation.ua.transport.security.SecurityPolicy;
-
-import static org.opcfoundation.ua.utils.EndpointUtil.selectByMessageSecurityMode;
 
 /**
  * @author Hervor
@@ -32,6 +31,31 @@ public class OpcConfig {
   private SecurityPolicy securityPolicy;
   private String userName;
   private String passWord;
+  private NodeId nodeId;
+
+    public NodeId getNodeId() {
+        return nodeId;
+    }
+
+    public void setNodeId(int nameSpaceIndex,String identifier,String idType) {
+        switch (idType) {
+            case "String":
+                this.nodeId=NodeId.get(IdType.String,nameSpaceIndex,identifier);
+                break;
+            case "Guid":
+                this.nodeId=NodeId.get(IdType.Guid,nameSpaceIndex,identifier);
+                break;
+            case "Numeric":
+                this.nodeId=NodeId.get(IdType.Numeric,nameSpaceIndex,identifier);
+                break;
+            case "Opaque":
+                this.nodeId=NodeId.get(IdType.Opaque,nameSpaceIndex,identifier);
+                break;
+            default:
+                LOG.info("not support nodeId type "+nameSpaceIndex+":"+identifier+":"+idType);
+        }
+    }
+
 
     public Integer getAuthentication() {
         return authentication;

@@ -108,7 +108,11 @@ import java.util.concurrent.ExecutorService;
                 @Parameter(name="user.password",
                         description = "ds",
                         type={DataType.STRING},
-                        defaultValue ="SecurityPolicy.NONE")
+                        defaultValue ="SecurityPolicy.NONE"),
+                @Parameter(name="opc.node.id",
+                        description = "ds",
+                        type={DataType.STRING},
+                        defaultValue ="5:Counter1:String")
         },
         examples = {
                 @Example(
@@ -142,6 +146,8 @@ public class OpcSource extends Source<OpcSource.OpcSourceState>{
     public static final String USER_NAME="user.name";
     public static final String USER_PASSWORD="user.password";
     public static final String AUTHENTICATION_MODE="authentication.mode";
+    public static final String OPC_NODE_ID="opc.node.id";
+
     private static final Logger LOG = Logger.getLogger(OpcSource.class);
 
     private String opcServerUrl;
@@ -161,6 +167,7 @@ public class OpcSource extends Source<OpcSource.OpcSourceState>{
     private OpcClientGroup opcClientGroup;
     private OpcConfig opcConfig;
     private String securityPolicy;
+    private String opcNodeId;
 
     protected ServiceDeploymentInfo exposeServiceDeploymentInfo() {
         return null;
@@ -184,6 +191,7 @@ public class OpcSource extends Source<OpcSource.OpcSourceState>{
         password=optionHolder.validateAndGetStaticValue(USER_PASSWORD);
         authenticationMode=optionHolder.validateAndGetStaticValue(AUTHENTICATION_MODE);
         securityPolicy=optionHolder.validateAndGetStaticValue(SECURITY_POLICY);
+        opcNodeId=optionHolder.validateAndGetStaticValue(OPC_NODE_ID);
 
         opcConfig.setAuthentication(Integer.parseInt(authenticationMode));
         opcConfig.setCertPath(certPath);
@@ -196,7 +204,15 @@ public class OpcSource extends Source<OpcSource.OpcSourceState>{
         opcConfig.setOpcServerUrl(opcServerUrl);
         opcConfig.setMessageSecurityMode(messageSecurityMode);
         opcConfig.setSecurityPolicy(securityPolicy);
+        if (opcNodeId.split(":").length == 3){
+            int nameSpaceIndex=Integer.parseInt(opcNodeId.split(":")[0]);
+            String identifier=opcNodeId.split(":")[1];
+            String idType=opcNodeId.split(":")[2];
+            opcConfig.setNodeId(nameSpaceIndex,identifier,idType);
+        }else {
+            throw new IllegalArgumentException("required like nameSpaceIndex:identifier:idType format ,but "+ opcNodeId);
 
+        }
         return() -> new OpcSourceState();
     }
 

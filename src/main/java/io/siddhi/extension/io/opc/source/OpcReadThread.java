@@ -111,7 +111,9 @@ public class OpcReadThread implements Runnable {
                         session.activate();
                 }
                 // Read current time
-                NodeId nodeId = Identifiers.Server_ServerStatus_CurrentTime;
+
+                NodeId nodeId=opcConfig.getNodeId();
+
                 ReadResponse readResponse = session.Read(
                         null,
                         500.0,
@@ -138,19 +140,27 @@ public class OpcReadThread implements Runnable {
                 Object[] event= new Object[]{nodeId.toString(),endpoint.getServer().getApplicationUri(),
                         readResponse.getResults()[0].getSourceTimestamp().toString(),
                         readResponse.getResults()[0].getServerTimestamp().toString(),
-                        readResponse.getResults()[0].getValue().toString()
+                        readResponse.getResults()[0].getValue().toString(),
+                        readResponse.getResults()[0].getStatusCode(),
+                        readResponse.getResults()[0].getSourcePicoseconds().intValue(),
+                        readResponse.getResults()[0].getServerPicoseconds().intValue(),
                 };
                 String[] transportSyncPropertiesArr = new String[]{};
                 sourceEventListener.onEvent(event,transportSyncPropertiesArr);
             } catch (ServiceResultException e) {
-                session.closeAsync();
                 e.printStackTrace();
             }
             try {
                 Thread.sleep(3000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
-        }
+            }
+            try {
+                session.close();
+            } catch (ServiceResultException e) {
+                e.printStackTrace();
+            }
+            session.closeAsync();
         }
     }
 

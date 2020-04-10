@@ -107,7 +107,7 @@ public class OpcClientGroup {
             }
             endpoints = sortBySecurityLevel(endpoints);
          } else if (opcServerUrl.startsWith("opc.https")) {
-           /* KeyPair httpsCertificate = getHttpsCert(opcAppName);
+          /*  KeyPair httpsCertificate = getHttpsCert(opcAppName);
             client.getApplication().getHttpsSettings().setKeyPair(httpsCertificate);
             client.getApplication().getHttpsSettings().setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
             client.getApplication().getHttpsSettings().setHttpsSecurityPolicies(HttpsSecurityPolicy.ALL_104);
